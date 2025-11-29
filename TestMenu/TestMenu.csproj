@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net452</TargetFramework>
+    <TargetFramework>net462</TargetFramework>
     <DebugType>embedded</DebugType>
     <TargetName>$(AssemblyName).net</TargetName>
     <Configurations>Release RedM;Release FiveM;Debug RedM;Debug FiveM</Configurations>
@@ -20,7 +20,7 @@
 
     <ProjectReference Include="..\MenuAPI\MenuAPI.csproj" />
 
-    <PackageReference Include="CitizenFX.Core.Client" Version="1.0.3394" Condition="'$(Configuration)' == 'Release FiveM' Or '$(Configuration)' == 'Debug FiveM'">
+    <PackageReference Include="CitizenFX.Core.Client" Version="1.0.22934" Condition="'$(Configuration)' == 'Release FiveM' Or '$(Configuration)' == 'Debug FiveM'">
       <ExcludeAssets>runtime</ExcludeAssets>
     </PackageReference>
 
@@ -32,7 +32,16 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Release RedM&quot; (&#xD;&#xA;  if exist &quot;$(SolutionDir)postbuild-redm.cmd&quot; (&#xD;&#xA;    &quot;$(SolutionDir)postbuild-redm.cmd&quot;&#xD;&#xA;  )&#xD;&#xA;) else if &quot;$(ConfigurationName)&quot; == &quot;Release FiveM&quot; (&#xD;&#xA;  if exist &quot;$(SolutionDir)\postbuild-fivem.cmd&quot; (&#xD;&#xA;    &quot;$(SolutionDir)\postbuild-fivem.cmd&quot;&#xD;&#xA;  )&#xD;&#xA;)&#xD;&#xA;" />
+    <Exec Command="if &quot;$(ConfigurationName)&quot; == &quot;Release RedM&quot; (
+  if exist &quot;$(SolutionDir)postbuild-redm.cmd&quot; (
+    &quot;$(SolutionDir)postbuild-redm.cmd&quot;
+  )
+) else if &quot;$(ConfigurationName)&quot; == &quot;Release FiveM&quot; (
+  if exist &quot;$(SolutionDir)\postbuild-fivem.cmd&quot; (
+    &quot;$(SolutionDir)\postbuild-fivem.cmd&quot;
+  )
+)
+" />
   </Target>
 
 </Project>
