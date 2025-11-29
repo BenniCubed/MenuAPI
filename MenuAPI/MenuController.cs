@@ -12,12 +12,14 @@ namespace MenuAPI
         public static List<Menu> Menus { get; protected set; } = new List<Menu>();
         internal static HashSet<Menu> VisibleMenus { get; } = new HashSet<Menu>();
 #if FIVEM
-        public const string _texture_dict = "commonmenu";
-        public const string _header_texture = "interaction_bgd";
+        public static string _texture_dict { get; set; } = "commonmenu";
+        public static string _header_texture { get; set; } = "interaction_bgd";
+
+        public static string _menu_subtitle_color { get; set; } = "~HUD_COLOUR_FREEMODE~";
 #endif
 #if REDM
-        public const string _texture_dict = "menu_textures";
-        public const string _header_texture = "translate_bg_1a";
+        public static string _texture_dict { get; set; } = "menu_textures";
+        public static string _header_texture { get; set; } = "translate_bg_1a";
 #endif
         private static List<string> menuTextureAssets = new List<string>()
         {
@@ -105,7 +107,7 @@ namespace MenuAPI
                 // right aligned menus are not supported for aspect ratios 17:9 or 21:9.
                 else
                 {
-                    // no matter what the new value would've been, the aspect ratio does not support right aligned menus, 
+                    // no matter what the new value would've been, the aspect ratio does not support right aligned menus,
                     // so (re)set it to be left aligned.
                     _alignment = MenuAlignmentOption.Left;
 

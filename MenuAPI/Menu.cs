@@ -575,7 +575,7 @@ namespace MenuAPI
         {
             // The control to listen for.
             internal Control control;
-            // The type. 
+            // The type.
             internal ControlPressCheckType pressType;
             // The function to call when the control is triggered.
             internal Action<Menu, Control> function;
@@ -1331,7 +1331,7 @@ namespace MenuAPI
                 }
                 else
                 {
-                    AddTextComponentSubstringPlayerName("~HUD_COLOUR_FREEMODE~" + MenuSubtitle.ToUpper());
+                    AddTextComponentSubstringPlayerName(MenuController._menu_subtitle_color + MenuSubtitle.ToUpper());
                 }
 
                 if (LeftAligned)
