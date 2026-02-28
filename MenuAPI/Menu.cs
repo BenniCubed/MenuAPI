@@ -401,6 +401,8 @@ namespace MenuAPI
 
         public float MenuItemsYOffset { get; private set; } = 0f;
 
+        public float DescriptionBottom { get; private set; } = 0f;
+
         public string CounterPreText { get; set; }
 
         public Menu ParentMenu { get; internal set; } = null;
@@ -1176,6 +1178,35 @@ namespace MenuAPI
             }
         }
 
+        public readonly static float SectionYSep = NormY(4f);
+
+        private static float DrawPos(float pos, float extent)
+        {
+            return pos + extent / 2f;
+        }
+
+        public static float NormX(float width)
+        {
+            return width / MenuController.ScreenWidth;
+        }
+
+        public static float DrawX(float x, float width) => DrawPos(x, width);
+
+        public static float NormY(float height)
+        {
+            return height / MenuController.ScreenHeight;
+        }
+
+        public static float DrawY(float y, float height) => DrawPos(y, height);
+
+        private static void SetDrawOrder(int order)
+        {
+            if (MenuController.SetDrawOrder)
+            {
+                SetScriptGfxDrawOrder(order);
+            }
+        }
+
         /// <summary>
         /// Draws the menu header.
         /// </summary>
@@ -1215,15 +1246,13 @@ namespace MenuAPI
                 ResetScriptGfxAlign();
 #endif
 #if REDM
-                if (MenuController.SetDrawOrder)
-                    SetScriptGfxDrawOrder(2);
+                SetDrawOrder(2);
                 float x = (Position.Key + (headerSize.Key / 2f)) / MenuController.ScreenWidth;
                 float y = (Position.Value + (headerSize.Value / 2f)) / MenuController.ScreenHeight;
                 float width = headerSize.Key / MenuController.ScreenWidth;
                 float height = headerSize.Value / MenuController.ScreenHeight;
                 DrawSprite(MenuController._texture_dict, MenuController._header_texture, x, y, width, height, 0f, 181, 17, 18, 255, false);
-                if (MenuController.SetDrawOrder)
-                    SetScriptGfxDrawOrder(1);
+                SetDrawOrder(1);
 #endif
                 #endregion
 
@@ -1256,16 +1285,14 @@ namespace MenuAPI
                 float size = (45f * 27f) / MenuController.ScreenHeight;
                 SetTextScale(size, size);
 
-                if (MenuController.SetDrawOrder)
-                    SetScriptGfxDrawOrder(3);
+                SetDrawOrder(4);
                 int font = 10;
                 Call((CitizenFX.Core.Native.Hash)0xADA9255D, font);
                 long _text = Call<long>(_CREATE_VAR_STRING, 10, "LITERAL_STRING", MenuTitle ?? "N/A");
                 float textX = (headerSize.Key / 2f) / MenuController.ScreenWidth;
                 float textY = y - (45f / MenuController.ScreenHeight);
                 DisplayText(_text, textX, textY);
-                if (MenuController.SetDrawOrder)
-                    SetScriptGfxDrawOrder(1);
+                SetDrawOrder(3);
                 menuItemsOffset = headerSize.Value;
 #endif
                 #endregion
@@ -1349,8 +1376,7 @@ namespace MenuAPI
 #if REDM
             if (!string.IsNullOrEmpty(MenuSubtitle))
             {
-                if (MenuController.SetDrawOrder)
-                    SetScriptGfxDrawOrder(3);
+                SetDrawOrder(3);
                 float size = (14f * 27f) / MenuController.ScreenHeight;
                 SetTextScale(size, size);
                 SetTextCentre(true);
@@ -1358,8 +1384,7 @@ namespace MenuAPI
                 Call((CitizenFX.Core.Native.Hash)0xADA9255D, font);
                 long _text = Call<long>(_CREATE_VAR_STRING, 10, "LITERAL_STRING", MenuSubtitle ?? "N/A");
                 DisplayText(_text, x, y - (52f / MenuController.ScreenHeight));
-                if (MenuController.SetDrawOrder)
-                    SetScriptGfxDrawOrder(1);
+                SetDrawOrder(1);
             }
 #endif
             #region draw counter + pre-counter text
@@ -1503,24 +1528,23 @@ namespace MenuAPI
         /// Draws the up/down arrow indicators whenever the menu contains more items that are not visible in the current view.
         /// </summary>
         /// <returns></returns>
-        private float DrawUpDownOverflowIndicators()
+        private float DrawUpDownOverflowIndicators(float descriptionY)
         {
-            float descriptionYOffset = 0f;
             if (Size < 1 || Size <= MaxItemsOnScreen)
             {
-                return descriptionYOffset;
+                return descriptionY;
             }
             #region background
-            float width = Width / MenuController.ScreenWidth;
-            float height = 60f / MenuController.ScreenWidth;
-            float x = (Position.Key + (Width / 2f)) / MenuController.ScreenWidth;
-            float y = (MenuItemsYOffset / MenuController.ScreenHeight) + (height / 2f) + (6f / MenuController.ScreenHeight);
+            float width = NormX(Width);
+            float height = NormX(60f); // Yes this is NormX. Don't know why, but this is how it was before.
+            float x = DrawX(NormX(Position.Key), width);
+            float y = DrawY(descriptionY + SectionYSep, height);
 
             SetScriptGfxAlign(LeftAligned ? 76 : 82, 84);
             SetScriptGfxAlignParams(0f, 0f, 0f, 0f);
 
             DrawRect(x, y, width, height, 0, 0, 0, 180);
-            descriptionYOffset = height;
+            descriptionY = y + height / 2f;
             ResetScriptGfxAlign();
             #endregion
 
@@ -1572,20 +1596,20 @@ namespace MenuAPI
 
             ResetScriptGfxAlign();
             #endregion
-            return descriptionYOffset;
+            return descriptionY;
         }
 #endif
         /// <summary>
         /// Draws the menu item description.
         /// </summary>
         /// <param name="menuItemsOffset"></param>
-        /// <param name="descriptionYOffset"></param>
-        /// <returns>The new descriptionYOffset value</returns>
-        private float DrawDescription(float menuItemsOffset, float descriptionYOffset)
+        /// <param name="descriptionY"></param>
+        /// <returns>The new descriptionY value</returns>
+        private float DrawDescription(float descriptionY)
         {
             if (Size < 1)
             {
-                return descriptionYOffset;
+                return descriptionY;
             }
             var currentMenuItem = GetCurrentMenuItem();
             if (currentMenuItem != null && !string.IsNullOrEmpty(currentMenuItem.Description))
@@ -1595,9 +1619,10 @@ namespace MenuAPI
                 float textSize = (14f * 27f) / MenuController.ScreenHeight;
 
 #if FIVEM
+                float descYTop = descriptionY + SectionYSep;
                 float textMinX = 0f + (10f / MenuController.ScreenWidth);
                 float textMaxX = Width / MenuController.ScreenWidth - (10f / MenuController.ScreenWidth);
-                float textY = menuItemsOffset / MenuController.ScreenHeight + (16f / MenuController.ScreenHeight) + descriptionYOffset;
+                float textY = descYTop + NormY(6f);
                 SetScriptGfxAlign(76, 84);
                 SetScriptGfxAlignParams(0f, 0f, 0f, 0f);
 
@@ -1666,36 +1691,33 @@ namespace MenuAPI
                 #endregion
 #if FIVEM
                 #region background
-                float descWidth = Width / MenuController.ScreenWidth;
-                float descHeight = (textHeight + 0.005f) * lineCount + (8f / MenuController.ScreenHeight) + (2.5f / MenuController.ScreenHeight);
-                float descX = (Position.Key + (Width / 2f)) / MenuController.ScreenWidth;
-                float descY = textY - (6f / MenuController.ScreenHeight) + (descHeight / 2f);
+                float descWidth = NormX(Width);
+                float descHeight = NormY(10.5f) + lineCount * (textHeight + 0.005f);
+                float descX = DrawX(NormX(Position.Key), descWidth);
+                float descY0 = DrawY(descYTop, NormY(4f)); // Y for the little dark bar above the description
+                float descY1 = DrawY(descYTop, descHeight); // Y for the actual description background
 
                 SetScriptGfxAlign(LeftAligned ? 76 : 82, 84);
                 SetScriptGfxAlignParams(0f, 0f, 0f, 0f);
 
-                DrawRect(descX, descY - (descHeight / 2f) + (2f / MenuController.ScreenHeight), descWidth, 4f / MenuController.ScreenHeight, 0, 0, 0, 200);
-                DrawRect(descX, descY, descWidth, descHeight, 0, 0, 0, 180);
+                DrawRect(descX, descY0, descWidth, NormY(4f), 0, 0, 0, 200);
+                DrawRect(descX, descY1, descWidth, descHeight, 0, 0, 0, 180);
 
                 ResetScriptGfxAlign();
                 #endregion
 
-                descriptionYOffset += descY + (descHeight / 2f) - (4f / MenuController.ScreenHeight);
+                descriptionY = descYTop + descHeight;
 #endif
             }
-            else
-            {
-                descriptionYOffset += menuItemsOffset / MenuController.ScreenHeight + (2f / MenuController.ScreenHeight) + descriptionYOffset;
-            }
-            return descriptionYOffset;
+            return descriptionY;
         }
 
 #if FIVEM
         /// <summary>
         /// Draws the weapon or vehicle stats panel.
         /// </summary>
-        /// <param name="descriptionYOffset"></param>
-        private void DrawWeaponOrVehicleStatsPanel(float descriptionYOffset)
+        /// <param name="descriptionY"></param>
+        private void DrawWeaponOrVehicleStatsPanel(float descriptionY)
         {
             if (Size < 1)
             {
@@ -1719,14 +1741,10 @@ namespace MenuAPI
             }
 
             float textSize = (14f * 27f) / MenuController.ScreenHeight;
-            float width = Width / MenuController.ScreenWidth;
-            float height = (140f) / MenuController.ScreenHeight;
-            float x = ((Width / 2f) / MenuController.ScreenWidth);
-            float y = descriptionYOffset + (height / 2f) + (8f / MenuController.ScreenHeight);
-            if (Size > MaxItemsOnScreen)
-            {
-                y -= (30f / MenuController.ScreenHeight);
-            }
+            float width = NormX(Width);
+            float height = NormY(140f);
+            float x = DrawX(NormX(Position.Key), width);
+            float y = DrawY(descriptionY + SectionYSep, height);
 
             #region background
             SetScriptGfxAlign(LeftAligned ? 76 : 82, 84);
@@ -1805,8 +1823,8 @@ namespace MenuAPI
         /// <summary>
         /// Draws the Opacity and Color panels on MenuListItems.
         /// </summary>
-        /// <param name="descriptionYOffset"></param>
-        private void DrawColorAndOpacityPanel(float descriptionYOffset)
+        /// <param name="descriptionY"></param>
+        private void DrawColorAndOpacityPanel(float descriptionY)
         {
             if (Size < 1)
             {
@@ -1828,14 +1846,10 @@ namespace MenuAPI
                     ScaleformMovieMethodAddParamInt(listItem.ListIndex * 10); // opacity percent
                     EndScaleformMovieMethod();
 
-                    float width = Width / MenuController.ScreenWidth;
-                    float height = ((700f / 500f) * Width) / MenuController.ScreenHeight;
-                    float x = ((Width / 2f) / MenuController.ScreenWidth);
-                    float y = descriptionYOffset + (height / 2f) + (4f / MenuController.ScreenHeight);
-                    if (Size > MaxItemsOnScreen)
-                    {
-                        y -= (30f / MenuController.ScreenHeight);
-                    }
+                    float width = NormX(Width);
+                    float height = NormY((700f / 500f) * Width);
+                    float x = DrawX(Position.Key, width);
+                    float y = DrawY(descriptionY + SectionYSep, height);
 
                     SetScriptGfxAlign(LeftAligned ? 76 : 82, 84);
                     SetScriptGfxAlignParams(0f, 0f, 0f, 0f);
@@ -1893,14 +1907,10 @@ namespace MenuAPI
                     ScaleformMovieMethodAddParamBool(true);
                     EndScaleformMovieMethod();
 
-                    float width = Width / MenuController.ScreenWidth;
-                    float height = ((700f / 500f) * Width) / MenuController.ScreenHeight;
-                    float x = ((Width / 2f) / MenuController.ScreenWidth);
-                    float y = descriptionYOffset + (height / 2f) + (4f / MenuController.ScreenHeight);
-                    if (Size > MaxItemsOnScreen)
-                    {
-                        y -= (30f / MenuController.ScreenHeight);
-                    }
+                    float width = NormX(Width);
+                    float height = NormY((700f / 500f) * Width);
+                    float x = DrawX(Position.Key, width);
+                    float y = DrawY(descriptionY + SectionYSep, height);
 
                     SetScriptGfxAlign(LeftAligned ? 76 : 82, 84);
                     SetScriptGfxAlignParams(0f, 0f, 0f, 0f);
@@ -1934,10 +1944,7 @@ namespace MenuAPI
             ProcessButtonPressHandlers();
 
             MenuItemsYOffset = 0f;
-            if (MenuController.SetDrawOrder)
-            {
-                SetScriptGfxDrawOrder(1);
-            }
+            SetDrawOrder(3);
 
             MenuItemsYOffset = await DrawHeader(MenuItemsYOffset);
 
@@ -1946,19 +1953,20 @@ namespace MenuAPI
             MenuItemsYOffset = DrawBackgroundGradient(MenuItemsYOffset);
 
             DrawActiveMenuItems();
-            float descriptionYOffset = 0f;
+
+            // +2f because there is some weird subtraction going on in DrawBackgroundGradient() and otherwise
+            // descriptionY would not line up with the bottom of the gradient rect and be too high
+            float descriptionY = NormY(MenuItemsYOffset + 2f);
 #if FIVEM
-            descriptionYOffset = DrawUpDownOverflowIndicators();
+            descriptionY = DrawUpDownOverflowIndicators(descriptionY);
 #endif
-            descriptionYOffset = DrawDescription(MenuItemsYOffset, descriptionYOffset);
+            descriptionY = DrawDescription(descriptionY);
+            DescriptionBottom = descriptionY;
 #if FIVEM
-            DrawWeaponOrVehicleStatsPanel(descriptionYOffset);
-            DrawColorAndOpacityPanel(descriptionYOffset);
+            DrawWeaponOrVehicleStatsPanel(descriptionY);
+            DrawColorAndOpacityPanel(descriptionY);
 #endif
-            if (MenuController.SetDrawOrder)
-            {
-                SetScriptGfxDrawOrder(0);
-            }
+            SetDrawOrder(0);
         }
         #endregion
     }
